@@ -257,7 +257,7 @@ index = 0
 total_test_points = np.zeros((2, 4, 3), dtype = np.float64)
 total_origin_points = np.zeros((2, 1, 3), dtype= np.float64)
 
-mound_images = glob.glob("./picture6/*jpg")
+mound_images = glob.glob("./picture4/*jpg")
 cnt = 0
 for name in mound_images:
     corner_points = np.zeros((5, 3), dtype=np.float64)
