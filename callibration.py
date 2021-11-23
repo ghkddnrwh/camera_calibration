@@ -1,6 +1,7 @@
 import numpy as np
 import glob, cv2
 import math
+from sympy import Symbol, solve
 
 def get_camera_matrix(images):
     criteria = (cv2.TERM_CRITERIA_EPS+cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -79,20 +80,33 @@ def cal_focus_length(point1, point2, point4):
 
     return math.sqrt((B - A) / (c - d))
 
+def cal_intrinsic_param(point0, point1, point2, point3, point4):
+    eq1 = (point0[0] - point1[0])**2 + (point0[1] - point1[1])**2 + (point0[2] - point1[2])**2 - (point0[0] - point3[0])**2 - (point0[1] - point3[1])**2 - (point0[2] - point3[2])**2
+    # eq2 = (point0[0] - point1[0])**2 + (point0[1] - point1[1])**2 + (point0[2] - point1[2])**2 - (point1[0] - point2[0])**2 - (point1[1] - point2[1])**2 - (point1[2] - point2[2])**2
+    # eq3 = (point0[0] - point1[0])**2 + (point0[1] - point1[1])**2 + (point0[2] - point1[2])**2 - (point3[0] - point4[0])**2 - (point3[1] - point4[1])**2 - (point3[2] - point4[2])**2
+    eq4 = (point0[0] - point1[0]) * (point0[0] - point3[0]) + (point0[1] - point1[1]) * (point0[1] - point3[1]) + (point0[2] - point1[2]) * (point0[2] - point3[2])
+    return solve(eq1, eq4, Hx, Hy)
+
 cali_images = glob.glob("./picture2/*.jpg")
 ret, mtx, dists, rvecs, tvecs = get_camera_matrix(cali_images)
 
 print("mtx : ", mtx)
 
+U = Symbol('U')
+V = Symbol('V')
+Hx = Symbol('Hx')
+Hy = Symbol('Hy')
 
 
 H = 940.0
 H = 918.5032416076951
-M = 3005.0
+H = 1
+M = 3000
 corner_points = np.zeros((4,3))
 mid_points = np.zeros((4,3))
-object_points = np.zeros((4,3), dtype=np.float64)
-plane_points = np.zeros((3, 3), dtype = np.float64)
+object_points = np.zeros((4,3))
+mid_object_points = np.zeros((4,3))
+plane_points = np.zeros((3, 3))
 test_points = np.zeros((4, 3), dtype= np.float64)
 index = 0
 
@@ -153,13 +167,45 @@ for name in mound_images:
     print("mid_points : ", mid_points)
 
     first_to_second_ratio = (corner_points[0, 0] - mid_points[0, 0]) / (mid_points[0, 0] - corner_points[1, 0])
+    first_to_first_mid_ratio = (1 + first_to_second_ratio) / 2
     first_to_forth_ratio = (corner_points[0, 0] - mid_points[3, 0]) / (mid_points[3, 0] - corner_points[3, 0])
+    first_to_forth_mid_ration = (1 + first_to_forth_ratio) / 2
     print(first_to_second_ratio)
+    print(first_to_first_mid_ratio)
     print(first_to_forth_ratio)
+    print(first_to_forth_mid_ration)
 
+    # corner_points = corner_points - np.array([U, V, 0])
+    # corner_points = corner_points * np.array([Hx, Hy, 1])
+
+    # mid_points = mid_points - np.array([U, V, 0])
+    # mid_points = mid_points * np.array([Hx, Hy, 1])
+
+    # print(corner_points * M)
+    # print(mid_points)
+
+    # object_points = corner_points
+    # mid_object_points = mid_points
+
+    # object_points[0] = M * object_points[0]
+    # object_points[1] = M * first_to_second_ratio * object_points[1]
+    # object_points[3] = M * first_to_forth_ratio * object_points[3]
+
+    # mid_object_points[0] = M * first_to_first_mid_ratio * mid_points[0]
+    # mid_object_points[3] = M * first_to_forth_mid_ration * mid_points[3]
+
+    # print(object_points)
+
+    # print(mid_object_points)
+
+    # print("hello")
+    # a = cal_intrinsic_param(object_points[0], mid_points[0], object_points[1], mid_points[3], object_points[3])
+    # print(a)
+    # print("hello2")
     plane_points[0] = object_points[0] = M * corner_points[0]
     plane_points[1] = object_points[1] = M * first_to_second_ratio * corner_points[1]
     plane_points[2] = object_points[3] = M * first_to_forth_ratio * corner_points[3]
+
     print(object_points)
     print(plane_points)
 
